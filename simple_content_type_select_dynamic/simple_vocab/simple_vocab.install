@@ -1,0 +1,101 @@
+<?php
+/**
+ * @file
+ * Install file for the Simple Vocab module
+ */
+/**
+ * Implements hook_install().
+ * - Create our vocabulary (ies)
+ * - Add some terms
+ */
+function simple_vocab_install() {
+  // create and add the andy_pangus taxonomy vocabulary and add some terms
+  _create_vocabularies();
+  _add_terms();
+}
+/**
+ * Implements hook_uninstall().
+ */
+function simple_vocab_uninstall() {
+  // delete the vocabularies and any taxonomy terms created
+  _remove_vocabulary('andy_pangus');
+}
+/**
+ * Create any vocabularies needed for this content-type
+ */
+function _create_vocabularies() {
+  _add_vocabulary(t('Andy Pangus'), 'andy_pangus', t('A list of terms to use along with the Simple Content Type dynamic checkboxes demo.'), 1);
+}
+/**
+ * Add a vocabulary to the taxonomy tree
+ *  $name - the human readable name for the vocabulary
+ *  $machine_name - the machine name for the vocabulary
+ *  $description - the human readable description for the vocabulary
+ *  $weight - the weight for the vocabulary
+ */
+function _add_vocabulary($name, $machine_name, $description, $weight)  {
+  $vocabulary = taxonomy_vocabulary_load(variable_get($machine_name . '_vocabulary', 0));
+  if (!$vocabulary)  {
+    $edit = array(
+      'name' => $name,
+      'machine_name' => $machine_name,
+      'description' => $description,
+      'hierarchy' => 1,
+      'module' => 'simple_vocab',
+      'weight' => $weight,
+    );
+    $vocabulary = (object) $edit;
+    taxonomy_vocabulary_save($vocabulary);
+    variable_set($machine_name . '_vocabulary', $vocabulary->vid);
+  }  
+}
+/**
+ * Remove the specified vocabulary
+ *  $machine_name - the machine name for the vocabulary which is to be removed
+ */
+function _remove_vocabulary($machine_name)  {
+  // delete the vocabularies and any taxonomy terms created
+  $vid = db_select('taxonomy_vocabulary', 'v')
+    ->fields('v', array('vid'))
+    ->condition("v.machine_name", $machine_name)
+    ->execute()
+	->fetchField();
+  taxonomy_vocabulary_delete($vid);
+}
+/**
+ * Add terms to vocabularies
+ */
+function _add_terms() {
+	// Client Names
+	_create_term('andy_pangus', t('Drupal 5'), t('Legacy version'));
+	_create_term('andy_pangus', t('Drupal 6'), t('Previous version'));
+	_create_term('andy_pangus', t('Drupal 7'), t('Current version'));
+	_create_term('andy_pangus', t('Drupal 8'), t('Coming soon'));
+	_create_term('andy_pangus', t('WAMP'), t('Windows Apache, MySQL, and PHP'));
+	_create_term('andy_pangus', t('LAMP'), t('Linux Apache, MySQL, and PHP'));
+	_create_term('andy_pangus', t('MAMP'), t('Mac Apache, MySQL, and PHP'));
+}
+/**
+ * Create a single term and add to a specific vocabulary if not already present
+ *	@vocab - the machine name of the vocabulary
+ *	@term - the human readable name of the term to be added
+ *	@desc - the humna readable description of the term to be added (Optional)
+ *  @weight - the weight of the term in the vocabulary list (Optional)
+ */
+function _create_term($vocab, $term, $desc = '', $weight = 0)  {
+	$added = NULL;
+	$added = taxonomy_get_term_by_name($term);
+	if ($added == '' || $added == NULL)  {
+		$vocabulary = taxonomy_vocabulary_machine_name_load($vocab);
+		$vid = $vocabulary->vid;
+		$new_term = array(
+			'name' => $term, 
+			'description' => $desc, 
+			'parent' => array(0), 
+			'weight' => $weight,
+			'vid' => $vid,
+		);
+		$term_obj = (object) $new_term;
+		taxonomy_term_save($term_obj);
+	}
+}

@@ -1,0 +1,87 @@
+<?php
+
+/**
+ * @file
+ * Install file for the Simple Content Type module
+ */
+/**
+ * Implements hook_uninstall().
+ */
+function simple_content_type_uninstall() {
+	// gather all the content created while the module was enabled
+	$result = db_select('node', 'n')
+		->fields('n', array('nid'))
+		->condition("n.type", 'simple_content_type')
+		->execute();
+	
+	$nids = array();
+	foreach ($result as $row) {
+		$nids[] = $row->nid;
+	}
+	
+	// delete all the nodes at once
+	node_delete_multiple($nids);
+	// delete our content type
+	node_type_delete('simple_content_type');
+	// purge all field information
+	field_purge_batch(1000);
+	
+	// get rid of any tables we created
+	$sql = 'DROP TABLE IF EXISTS simple_content_type_data';
+	$result = db_query($sql);
+}
+/**
+ * Implements hook_schema().
+ */
+function simple_content_type_schema() {
+	// table schema to track example data
+	$schema['simple_content_type_data'] = array(
+		'description' => 'Stores information for our example content type.',
+		'fields' => array(
+			'nid' => array(
+				'description' => 'The {node}.nid of the node being created.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+			'uid' => array(
+				'description' => 'The {user}.uid of the user this node belongs to.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+			'simple_content_type_textfield' => array(
+				'description' => 'The value entered into the text field.',
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+			),
+			'simple_content_type_textarea' => array(
+				'description' => 'The value for our textarea without formats.',
+				'type' => 'text',
+				'size' => 'big',
+				'not null' => TRUE,
+			),
+			'simple_content_type_text' => array(
+				'description' => 'The value for our textarea with formats.',
+				'type' => 'text',
+				'size' => 'big',
+				'not null' => TRUE,
+			),
+			'simple_content_type_format' => array(
+				'description' => 'The format for our textarea with formats.',
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+			),
+			
+		),
+		'index' => array('nid'),
+		'primary key' => array('nid'),
+		'unique keys' => array(
+			'nid' => array('nid'),
+		),
+	);
+	
+	return $schema;
+}

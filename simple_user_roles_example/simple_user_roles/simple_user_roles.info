@@ -1,0 +1,8 @@
+name = Simple User Roles
+description = A demonstration on adding roles to users dynamically based on how long they have been a site member
+package = Andy Pangus Examples
+core = 7.x
+dependencies[] = search
+dependencies[] = simple_content_type
+files[] = simple_user_roles.install
+files[] = simple_user_roles.module

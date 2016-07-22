@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * This file is required for all modules
+ */
+require_once('simple_user_roles_functions.inc');
+/**
+ * Implements hook_cron().
+ */
+function simple_user_roles_cron()  {
+  // get a list of active users
+  $results = db_select('users', 'u')
+    ->fields('u', array('uid', 'created'))
+    ->condition('u.status', 1)
+    ->execute();
+  // limit the list of users to those who do not have the roles pangus or administrator
+  $users = array();
+  foreach ($results as $user)  {
+    // get any roles assigned to this user
+    $roles = db_select('users_roles', 'r')
+      ->fields('r', array('rid'))
+      ->condition('r.uid', $user->uid)
+      ->execute();
+    if (!$roles)  {
+      $users[] = $user;
+    } else  {
+      $add_role = TRUE;
+      foreach ($roles as $role)  {
+        $role_name = user_role_load($role->rid)->name;
+        if  ($role_name == 'pangus' || $role_name == 'administrator')  {
+          $add_role = FALSE;
+        } // end if
+      } // end foreach
+      if ($add_role)  {
+        $users[] = $user;
+      } // end if
+    } // end if
+  } // end foreach
+  // some convenience vars
+  $newb_rid = user_role_load_by_name('newb')->rid;
+  $week = 60 * 60 * 24 * 7;
+  $month = 60 * 60 * 24 * 30;
+  // get the current time
+  $time = time();
+  // foreach user
+  foreach ($users as $user)  {
+    // how long has the user been a member?
+    $time_length = $time - $user->created;
+    // if it has it been longer than a week but less than a month
+    if ($time_length >= $week && $time_length < $month)  {
+       // add the newb role if they do not have it already
+      simple_user_roles_add_role_to_user('newb', $user->uid);
+    } else if ($time_length >= $month) {
+    //  if it has been longer than a month
+      // remove the newb role
+      $sql = "DELETE FROM {users_roles} WHERE uid=:uid AND rid=:rid";
+      $delete = db_query($sql, array(':uid' => $user->uid, ':rid' => $newb_rid));
+      // add the pangus role
+      simple_user_roles_add_role_to_user('pangus', $user->uid);
+    } // end if
+  } // end foreach
+}

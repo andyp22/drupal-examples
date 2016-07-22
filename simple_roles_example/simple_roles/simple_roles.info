@@ -1,0 +1,8 @@
+name = Simple Roles
+description = A demonstration on adding roles
+package = Andy Pangus Examples
+core = 7.x
+dependencies[] = search
+dependencies[] = simple_content_type
+files[] = simple_roles.install
+files[] = simple_roles.module

@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * @file
+ * simple_user_roles_functions.inc
+ * Helper functiosn for the Simple User Roles module
+ */
+/**
+ *  Adds a new role
+ *  @machine_name - the name of the role to be added
+ *  @weight - the optional display weight for role
+ */
+function simple_user_roles_add_role($machine_name, $weight = 0)  {
+  $role = new stdClass();
+  $role->name = $machine_name;
+  $role->weight = $weight;
+  if (!user_role_load_by_name($role->name))  {
+    user_role_save($role);
+  }
+}
+/**
+ *  Adds permissions to a role
+ *  @role_name - the name of the role to receive an update
+ *  @permissions - the array of permissions to add
+ */
+function simple_user_roles_add_permissions($role_name, $permissions)  {
+  $role = user_role_load_by_name($role_name);
+  user_role_grant_permissions($role->rid, $permissions);
+}
+/**
+ * Adds a role to a user
+ * @role_name - the machine name for the role to be added
+ * @uid - the {user}.uid for the user being updated
+ */
+function simple_user_roles_add_role_to_user($role_name, $uid)  {
+  $results = db_select('users_roles', 'ur')
+    ->fields('ur', array('rid'))
+    ->condition('ur.uid', $uid)
+    ->execute();
+  $_add_to_user = TRUE;
+  if ($results->rowCount() > 0)  {
+    // check to see if the user already has this role assigned to them
+    foreach ($results as $rid)  {
+      $name = user_role_load($rid->rid)->name;
+      if ($name == $role_name) {
+        $_add_to_user = FALSE;
+      }
+    }
+  }
+  if ($_add_to_user)  {
+    $rid = user_role_load_by_name($role_name)->rid;
+    $insert = db_insert('users_roles')
+      ->fields(array(
+        'uid' => $uid,
+        'rid' => $rid,
+      ))
+      ->execute();
+  }
+}

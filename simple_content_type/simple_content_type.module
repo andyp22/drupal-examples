@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * This module provides a node type called 'Simple Content Type'
+ */
+/**
+ * Implements hook_node_info().
+ */
+function simple_content_type_node_info() {
+  
+  $items['simple_content_type'] = array(
+    'name' => t('Simple Content Type'),
+    'type' => 'simple_content_type',
+    'base' => 'node_content',
+    'description' => t('A simple demonstration content type with a title and body.'),
+    'has_title' => '1',
+    'title_label' => t('Simple Title'),
+    'body_label' => t('Simple Description'),
+    'help' => t('Please fill in all fields.'),
+  );
+  
+  return $items;
+}
+/**
+ * Implement hook_form() with the standard default form.
+ */
+function simple_content_type_form($node, $form_state) {
+  return node_content_form($node, $form_state);
+}

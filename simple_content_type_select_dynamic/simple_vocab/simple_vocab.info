@@ -1,0 +1,6 @@
+name = Simple Vocabulary
+description = A vocabulary and terms to be used with the Simple Content Type demo
+package = Andy Pangus Examples
+core = 7.x
+files[] = simple_vocab.install
+files[] = simple_vocab.module

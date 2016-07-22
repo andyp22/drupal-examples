@@ -1,0 +1,7 @@
+name = Simple Content Type
+description = A simple demonstration content type
+package = Andy Pangus Examples
+core = 7.x
+dependencies[] = simple_vocab
+files[] = simple_content_type.install
+files[] = simple_content_type.module

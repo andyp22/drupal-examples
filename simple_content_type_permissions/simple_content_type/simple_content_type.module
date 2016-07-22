@@ -1,0 +1,92 @@
+<?php
+
+/**
+ * @file
+ * This module provides a node type called 'Simple Content Type'
+ */
+/**
+ * Implements hook_node_info().
+ */
+function simple_content_type_node_info() {
+  
+  $items['simple_content_type'] = array(
+    'name' => t('Simple Content Type'),
+    'type' => 'simple_content_type',
+    'base' => 'node_content',
+    'description' => t('A simple demonstration content type with a title and body.'),
+    'has_title' => '1',
+    'title_label' => t('Simple Title'),
+    'body_label' => t('Simple Description'),
+    'help' => t('Please fill in all fields.'),
+  );
+  
+  return $items;
+}
+/**
+ * Implement hook_form() with the standard default form.
+ */
+function simple_content_type_form($node, $form_state) {
+  return node_content_form($node, $form_state);
+}
+/**
+ * Implements hook_permission().
+ */
+function simple_content_type_permission() {
+  
+  $permissions['create simple content type'] = array(
+    'title' => t('Create simple content type'),
+    'description' => t('Allow users to create simple content type nodes'),
+  );
+  $permissions['view simple content type'] = array(
+    'title' => t('View simple content type'),
+    'description' => t('Allow users to view simple content type nodes'),
+  );
+  $permissions['edit simple content type'] = array(
+    'title' => t('Edit simple content type'),
+    'description' => t('Allow users to edit simple content type nodes'),
+  );
+  $permissions['delete simple content type'] = array(
+    'title' => t('Delete simple content type'),
+    'description' => t('Allow users to delete simple content type nodes'),
+  );
+  
+  return $permissions;
+}
+/**
+ * Implements hook_node_access().
+ */
+function simple_content_type_node_access($node, $op, $account) {
+  // just in case the $node parameter is not really a node object or
+  // the $node->type is one other than our own
+  $type = is_string($node) ? $node : $node->type;
+  if (! is_object($node) || $type != 'simple_content_type') {
+    return NODE_ACCESS_IGNORE;
+  }
+  switch ($op)  {
+    case 'create':
+      if (user_access('create simple content type', $account))  {
+        return NODE_ACCESS_ALLOW;
+      }
+      break;
+    case 'update':
+      if (user_access('edit simple content type', $account))  {
+        return NODE_ACCESS_ALLOW;
+      }
+      break;
+    case 'delete':
+      if (user_access('delete simple content type', $account))  {
+        return NODE_ACCESS_ALLOW;
+      }
+      break;
+    case 'view':
+      if (user_access('view simple content type', $account))  {
+        return NODE_ACCESS_ALLOW;
+      }
+      break;
+    default:
+      // just in case $op is an unexpected value
+      return NODE_ACCESS_IGNORE;
+  }
+  // if none of the conditions above are met we will deny access
+  return NODE_ACCESS_DENY;
+}

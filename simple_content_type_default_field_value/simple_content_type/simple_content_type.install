@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * @file
+ * Install file for the Simple Content Type module
+ */
+// make sure you have this or the options function won't fire
+require_once('simple_content_type.functions.inc');
+/**
+ * Implements hook_install().
+ * - Add the body field
+ * - Configure the body field
+ */
+function simple_content_type_install() {
+  // create the simple content type
+  node_types_rebuild();
+  $types = node_type_get_types();
+  
+  // add the body field to the node type
+  node_add_body_field($types['simple_content_type']);
+  // load the instance definition for our content type's bocy
+  $body_instance = field_info_instance('node', 'body', 'simple_content_type');
+  // configure the body field
+  $body_instance['type'] = 'text_summary_or_trimmed';
+  $body_instance['label'] = 'Simple Description';
+  $body_instance['display'] = array(
+    'default' => array(
+      'label' => 'above', 
+      'type' => 'text_default',
+      'weight' => 0,
+    ),
+    'teaser' => array(
+      'label' => 'hidden', 
+      'type' => 'text_summary_or_trimmed',
+      'weight' => 0,
+    ),
+  );
+  $body_instance['widget']['weight'] = 0;
+  
+  // save our changes to the body field instance
+  field_update_instance($body_instance);
+  
+  // create all the fields we are adding to our content type
+  foreach (_simple_content_type_installed_fields() as $field) {
+    field_create_field($field);
+  }
+  
+  // create all the instance for our fields
+  foreach (_simple_content_type_installed_instances() as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = 'simple_content_type';
+    field_create_instance($instance);
+  }
+  
+  // disable comments for this content type
+  variable_set('comment_simple_content_type', COMMENT_NODE_CLOSED);
+  // set the starting default value for the text field
+  variable_set('simple_content_type_default_text', 'Pangus');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function simple_content_type_uninstall() {
+  // gather all the content while the module was enabled
+  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
+  $result = db_query($sql, array(':type' => 'simple_content_type'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+  
+  // delete all the nodes at once
+  node_delete_multiple($nids);
+  
+  // delete all the fields defined by this module
+  foreach (array_keys(_simple_content_type_installed_fields()) as $field) {
+    field_delete_field($field);
+  }
+  
+  // delete any remaining field instances attached to this content type
+  $instances = field_info_instances('node', 'simple_content_type');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+  
+  // delete our content type
+  node_type_delete('simple_content_type');
+  
+  // purge all field information
+  field_purge_batch(1000);
+  
+  // set the starting default value for the text field
+  variable_del('comment_simple_content_type');
+  variable_del('simple_content_type_default_text');
+}
+

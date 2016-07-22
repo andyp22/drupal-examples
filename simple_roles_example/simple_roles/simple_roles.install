@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * @file
+ * Install file for Simple Roles module
+ */
+/**
+ * Implements hook_install()
+ */
+function simple_roles_install() {
+	// create any roles we will be using
+	$newb_permissions = array(
+		'search content',
+		'view simple content type',
+	);
+	$pangus_permissions = array(
+		'search content',
+		'use advanced search',
+		'view simple content type',
+		'create simple content type',
+		'edit simple content type',
+		'delete simple content type',
+	);
+	
+	_add_role('newb');
+	_add_role('pangus', 1);
+	
+	_add_permissions('newb', $newb_permissions);
+	_add_permissions('pangus', $pangus_permissions);
+}
+/**
+ * Implements hook_uninstall()
+ */
+function simple_roles_uninstall() {
+	// remove any roles we created
+	user_role_delete('newb');
+	user_role_delete('pangus');
+	
+}
+/**
+ *	Adds a new role
+ *  @machine_name - the name of the role to be added
+ *	@weight - the optional display weight for role
+ */
+function _add_role($machine_name, $weight = 0)  {
+	$role = new stdClass();
+	$role->name = $machine_name;
+	$role->weight = $weight;
+	user_role_save($role);
+}
+/**
+ *	Adds permissions to a role
+ *	@role_name - the name of the role to receive an update
+ *	@permissions - the array of permissions to add
+ */
+function _add_permissions($role_name, $permissions)  {
+	$role = user_role_load_by_name($role_name);
+	user_role_grant_permissions($role->rid, $permissions);
+}

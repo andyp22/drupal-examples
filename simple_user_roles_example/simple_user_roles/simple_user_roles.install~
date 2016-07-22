@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Install file for Simple Roles module
+ */
+require_once('simple_user_roles_functions.inc');
+/**
+ * Implements hook_install()
+ */
+function simple_user_roles_install() {
+	// create any roles we will be using
+	simple_user_roles_add_role('newb', 1);
+	simple_user_roles_add_role('pangus', 1);
+	// add permissions to the new roles
+	$newb_permissions = array(
+		'search content',
+		'view simple content type',
+	);
+	$pangus_permissions = array(
+		'search content',
+		'use advanced search',
+		'view simple content type',
+		'create simple content type',
+		'edit simple content type',
+		'delete simple content type',
+	);
+	simple_user_roles_add_permissions('newb', $newb_permissions);
+	simple_user_roles_add_permissions('pangus', $pangus_permissions);
+}
+/**
+ * Implements hook_uninstall()
+ */
+function simple_user_roles_uninstall() {
+	// remove the roles we created
+	user_role_delete('newb');
+	user_role_delete('pangus');
+}

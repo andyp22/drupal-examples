@@ -1,0 +1,183 @@
+<?php
+
+/**
+ * @file
+ * This module provides a node type called 'Simple Content Type'
+ */
+/**
+ * Implements hook_node_info().
+ */
+function simple_content_type_node_info() {
+	// define our content type info
+	$items['simple_content_type'] = array(
+		'name' => t('Simple Content Type'),
+		'type' => 'simple_content_type',
+		'base' => 'simple_content_type',
+		'description' => t('A simple demonstration content type using different text field types.'),
+		'has_title' => '1',
+		'title_label' => t('Simple Title'),
+		'has_body' => FALSE,
+		'help' => t('Please fill in all fields.'),
+	);
+	
+	return $items;
+}
+/**
+ * Implement hook_form() with the standard default form.
+ */
+function simple_content_type_form($node, &$form_state) {
+	// get the default values for our form fields
+	if (!isset($node->nid))  {
+		$txt_field = '';
+		$txt_area = '';
+		$txt_area_with_format = '';
+		$txt_format = 'filtered_html';
+	} else  {
+		// query the db for info about our node
+		$data = db_select('simple_content_type_data', 'd')
+			->fields('d', array(
+				'simple_content_type_textfield', 
+				'simple_content_type_textarea', 
+				'simple_content_type_text', 
+				'simple_content_type_format'))
+			->condition("d.nid", $node->nid)
+			->execute()
+			->fetchAssoc();
+		
+		$txt_field = $data['simple_content_type_textfield'];
+		$txt_area = $data['simple_content_type_textarea'];
+		$txt_area_with_format = $data['simple_content_type_text'];
+		$txt_format = $data['simple_content_type_format'];
+	}
+	// build the form
+	$form = array();
+	$form['simple_content_type_textfield'] = array(
+		'#title' => t('Email Address'),
+		'#type' => 'textfield',
+		'#description' => t('Enter an email address.'),
+		'#default_value' => $txt_field,
+		'#weight' => -9,
+		'#required' => TRUE,
+	);
+	$form['simple_content_type_textarea'] = array(
+		'#title' => t('Enter a plain text message.'),
+		'#type' => 'textarea',
+		'#description' => t('This text area will be sanitized and not run through any filters prior to display.'),
+		'#default_value' => $txt_area,
+		'#weight' => -8,
+		'#rows' => 5,
+		'#required' => TRUE,
+	);
+	$form['simple_content_type_text'] = array(
+		'#title' => t('Enter some a formatted text message.'),
+		'#type' => 'text_format',
+		'#description' => t('This text area will be sanitized and run through the designated filter prior to display.'),
+		'#default_value' => $txt_area_with_format,
+		'#format' => $txt_format,
+		'#weight' => -7,
+		'#rows' => 10,
+		'#required' => TRUE,
+	);
+	
+	return $form;
+}
+/**
+ * Implements hook_node_validate().
+ */
+function simple_content_type_node_validate($node, $form, &$form_state) {
+	// if we're not validating one of our own get out of here
+	if ($node->type != "simple_content_type")  {
+		return;
+	}
+	// Check to see if email address is formatted correctly
+	if (isset($node->simple_content_type_textfield) && !valid_email_address($node->simple_content_type_textfield))  {
+		form_set_error('simple_content_type_textfield', t('Please enter a valid email address.'), NULL);
+	}
+}
+/**
+ * Implement hook_node_insert()
+ */
+function simple_content_type_node_insert($node)  {
+	// if we're not inserting one of our own get out of here
+	if ($node->type != "simple_content_type")  {
+		return;
+	}
+	global $user;
+	$nid = $node->nid;
+	$uid = $user->uid;
+	
+	$insert = db_insert('simple_content_type_data')
+		->fields(array(
+			'nid' => $nid,
+			'uid' => $uid,
+			'simple_content_type_textfield' => $node->simple_content_type_textfield,
+			'simple_content_type_textarea' => check_plain($node->simple_content_type_textarea),
+			'simple_content_type_text' => check_markup($node->simple_content_type_text['value'], $node->simple_content_type_text['format']),
+			'simple_content_type_format' => $node->simple_content_type_text['format'],))
+		->execute();
+}
+/**
+ * Implement hook_node_update()
+ */
+function simple_content_type_node_update($node)  {
+	// if we're not updating one of our own get out of here
+	if ($node->type != "simple_content_type")  {
+		return;
+	}
+	
+	$update = db_update('simple_content_type_data')
+		->fields(array(
+			'simple_content_type_textfield' => $node->simple_content_type_textfield,
+			'simple_content_type_textarea' => check_plain($node->simple_content_type_textarea),
+			'simple_content_type_text' => check_markup($node->simple_content_type_text['value'], $node->simple_content_type_text['format']),
+			'simple_content_type_format' => $node->simple_content_type_text['format'],
+		))
+		->condition('nid', $node->nid, '=')
+		->execute();
+}
+/**
+ * Implements hook_node_view().
+ */
+function simple_content_type_node_view($node, $view_mode, $langcode) {
+	if ($node->type != 'simple_content_type')  {
+		return;
+	}
+	// get the data we want to display
+	$data = db_select('simple_content_type_data', 'd')
+		->fields('d', array(
+			'uid', 
+			'simple_content_type_textfield', 
+			'simple_content_type_textarea', 
+			'simple_content_type_text'))
+		->condition("d.nid", $node->nid)
+		->execute()
+		->fetchAssoc();
+	// fetch the user's name using {simple_content_type_data}.uid
+	$user_name = db_select('users', 'u')
+		->fields('u', array('name'))
+		->condition("u.uid", $data['uid'])
+		->execute()
+		->fetchField();
+	
+	$txt_field = $data['simple_content_type_textfield'];
+	$txt_area = $data['simple_content_type_textarea'];
+	$txt_area_with_format = $data['simple_content_type_text'];
+	
+	// add what we want to the node content area
+	$node->content['intro'] = array(
+		'#markup' => '<p>This node was created by user ' . $user_name . '. Thanks for your contribution.</p>', 
+		'#weight' => -10, 
+	);
+	$node->content['email'] = array(
+		'#markup' => '<p><strong>Example Email:</strong> ' . $txt_field . '</p>', 
+		'#weight' => -9, 
+	);
+	$node->content['plain_text'] = array(
+		'#markup' => '<p><strong>The plain text:</strong> ' . $txt_area . '</p>', 
+		'#weight' => -8, 
+	);
+	$node->content['formatted_text'] = array(
+		'#markup' => $txt_area_with_format, 
+		'#weight' => -7, 
+	);
+}
